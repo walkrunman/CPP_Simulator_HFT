@@ -8,18 +8,18 @@ public:
     Snapshot(){}
     ~Snapshot(){}
 
-    long long int get_receive_ts() {return receive_ts;}
-    long long int get_exchange_ts() {return exchange_ts;}
+    int64_t get_receive_ts()  {return receive_ts;}
+    int64_t get_exchange_ts() {return exchange_ts;}
 
     double *get_ask_price() {return ask_price;}
-    double *get_ask_vol() {return ask_vol;}
+    double *get_ask_vol()   {return ask_vol;}
 
     double *get_bid_price() {return bid_price;}
-    double *get_bid_vol() {return bid_vol;}
+    double *get_bid_vol()   {return bid_vol;}
 
 private:
-    long long int receive_ts;
-    long long int exchange_ts;
+    int64_t receive_ts;
+    int64_t exchange_ts;
 
     double ask_price[10];
     double ask_vol[10];

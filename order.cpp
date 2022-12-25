@@ -2,8 +2,8 @@
 #define ORDER
 class Order{
 public:
-    Order(int id_, bool aggro_side_, double price_,
-          double vol_, long long int ts_){
+    Order(int id_, bool aggro_side_,
+          double price_, double vol_, int64_t ts_){
             id = id_;
             aggro_side  = aggro_side_;
             price       = price_;
@@ -12,16 +12,16 @@ public:
     }
     ~Order(){}
 
-    long long int get_time()    {return ts;}
+    int64_t       get_time()    {return ts;}
     double        get_vol()     {return vol;}
     double        get_price()   {return price;}
     bool          get_side()    {return aggro_side;}
     int           get_id()      {return id;}
 
-    void set_time(long long int time) {ts = time;}
+    void set_vol(double vol_)   {vol = vol_;}
 
 private:
-    long long int   ts;
+    int64_t         ts;
     double          vol;
     double          price;
     int             id;

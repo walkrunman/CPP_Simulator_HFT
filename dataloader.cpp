@@ -18,23 +18,47 @@ public:
         this->trades.close();
     }
 
-    short int tick(){
-        if(receive_ts_trade == receive_ts_snapshot){
-            trade_flag    = tick_trade();
-            snapshot_flag = tick_snapshot();
+    int8_t tick(){
+        if(!snapshot_flag && !trade_flag)
+        {
+            if(receive_ts_trade == receive_ts_snapshot)
+            {
+                trade_flag    = tick_trade();
+                snapshot_flag = tick_snapshot();
 
-            receive_ts_trade = trade_strategy->get_receive_ts();
-            receive_ts_snapshot = snapshot_strategy->get_receive_ts();
+                receive_ts_trade = trade_strategy->get_receive_ts();
+                receive_ts_snapshot = snapshot_strategy->get_receive_ts();
 
-            return check_return(trade_flag, trade_flag, 0);     //return 0 means we return "snapshot" and "trade" simultaneously
-        } else if(receive_ts_trade < receive_ts_snapshot){
+                return check_return(trade_flag, snapshot_flag, 0);       //return 0 means we return "snapshot" and "trade" simultaneously
+            }
+            else if(receive_ts_trade < receive_ts_snapshot)
+            {
+                trade_flag       = tick_trade();
+                receive_ts_trade = trade_strategy->get_receive_ts();
+                return check_return(trade_flag, snapshot_flag, 1);      //return 1 means we return "trade"
+            }
+            else
+            {
+                snapshot_flag = tick_snapshot();
+                receive_ts_snapshot = snapshot_strategy->get_receive_ts();
+                return check_return(trade_flag, snapshot_flag, 2);      //return 2 means we return "snapshot"
+            }
+        }
+        else if(snapshot_flag && !trade_flag)
+        {
             trade_flag       = tick_trade();
             receive_ts_trade = trade_strategy->get_receive_ts();
-            return check_return(trade_flag, trade_flag, 1);     //return 1 means we return "trade"
-        } else{
+            return check_return(trade_flag, snapshot_flag, 1);          //return 1 means we return "trade"
+        }
+        else if(!snapshot_flag && trade_flag)
+        {
             snapshot_flag = tick_snapshot();
             receive_ts_snapshot = snapshot_strategy->get_receive_ts();
-            return check_return(trade_flag, trade_flag, 2);     //return 2 means we return "snapshot"
+            return check_return(trade_flag, snapshot_flag, 2);          //return 2 means we return "snapshot"
+        }
+        else
+        {
+            return -1;
         }
     }
 
@@ -56,27 +80,27 @@ private:
     string      filename_trades;
     ifstream    trades;
 
-    short int   trade_flag;
-    short int   snapshot_flag;
+    int8_t   trade_flag     = 0;
+    int8_t   snapshot_flag  = 0;
 
     std::shared_ptr<Trade>    trade_strategy;
     std::shared_ptr<Snapshot> snapshot_strategy;
 
-    long long int receive_ts_trade = 0;
-    long long int receive_ts_snapshot = 0;
+    int64_t receive_ts_trade    = 0;
+    int64_t receive_ts_snapshot = 0;
 
-    short int check_return(short int flag1,
-                          short int flag2,
-                          short int normal_value){
+    int8_t check_return(int8_t flag1,
+                        int8_t flag2,
+                        int8_t normal_value){
         if(flag1*flag2){
-            return -1;
+            return int8_t(-1);
         }
         else{
             return normal_value;
         }
     }
 
-    short int tick_trade(){
+    int8_t tick_trade(){
         if(!this->trades.eof()){
             getline(this->trades, line);
             if(line==""){return -1;}
@@ -89,7 +113,7 @@ private:
         }
     }
 
-    short int tick_snapshot(){
+    int8_t tick_snapshot(){
         if(!this->lobs.eof()){
             getline(this->lobs, line);
             if(line==""){return -1;}

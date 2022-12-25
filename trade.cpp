@@ -8,8 +8,8 @@ public:
     Trade(){}
     ~Trade(){}
 
-    long long int get_exchange_ts() {return exchange_ts;}
-    long long int get_receive_ts() {return receive_ts;}
+    int64_t get_exchange_ts() {return exchange_ts;}
+    int64_t get_receive_ts() {return receive_ts;}
     double get_price() {return price;}
     double get_vol() {return vol;}
     bool get_side() {return aggro_side;}
@@ -17,8 +17,8 @@ public:
     void set_vol(double vol_) {vol = vol_;}
 
 private:
-    long long int exchange_ts;
-    long long int receive_ts;
+    int64_t exchange_ts;
+    int64_t receive_ts;
     double price;
     double vol;
     bool aggro_side; //false for bid, true for ask

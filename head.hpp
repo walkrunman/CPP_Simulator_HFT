@@ -1,8 +1,6 @@
 #include <iostream>
 #include <string>
 #include <fstream>
-// #include <queue>
-// #include <vector>
 #include <list>
 
 #include <algorithm>
@@ -17,7 +15,9 @@ using namespace std;
 #include "cancelorder.cpp"  // requests for orders cancelation
 #include "owntrade.cpp"     // information about completed transactions
 
+#include "utils.cpp"
 #include "dataloader.cpp"   // class for load information
 #include "simulator.cpp"    // look info inside the file
 #include "strategy.cpp"     // look info inside the file
+
 
