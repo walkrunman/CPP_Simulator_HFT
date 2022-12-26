@@ -1,7 +1,7 @@
 #ifndef UTILS
 #define UTILS
 void print_results(list<std::shared_ptr<OwnTrade>> own_trade,
-                   string path_results = "trades.csv"){
+                   string path_results = "results.csv"){
     ofstream trades;
     trades.open(path_results);
     trades << "time;side;price;vol;mid_price;trading_way"<< endl;
