@@ -51,4 +51,4 @@ Another example based on real data, but with optimistic parameters in simulation
 <h2 align="left">Contacts</h2>
 Feel free to contact me: antonlyulin93@gmail.com
 <br>
-![](https://komarev.com/ghpvc/?username=walkrunman)
+<a href="https://hits.sh/github.com/walkrunman/hits/"><img alt="Hits" src="https://hits.sh/github.com/walkrunman/hits.svg"/></a>
