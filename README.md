@@ -4,14 +4,16 @@ In order to use this simulator you have to have 2 files: lobs.csv and trades.csv
 lobs.csv should consist data about order books changes. <br>
 <br>
 Example: <br>
-![lobs.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/order_book_example.png) 
+![lobs.csv]
+(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/order_book_example.png) 
 <br>
 <br>
 10 prices and 10 volumes for ask and 10 prices and 10 volumes for bid <br>
 <br>
 trades.csv should consist data about anonymous trades 
 <br>
-![trades.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/trades_example.png) 
+![trades.csv]
+(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/trades_example.png) 
 <br>
 <h2 align="left">Usage</h2>
 Simulator parameters: <br>
@@ -37,16 +39,20 @@ In the file utils a function print_results was released. It print results into f
 
 <h2 align="left">Tests</h2>
 I've generated 2 files for test strategy: lobs.csv and trades.csv: <br>
-![test_lobs.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_lobs.png)
+![test_lobs.csv]
+(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_lobs.png)
 <br>
-![test_trades.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_trades.png)
+![test_trades.csv]
+(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_trades.png)
 <br>
 It means mid_price grow up linearly. <br>
 And here's how best-bid-best-ask strategy works with these data. Here's graphic of PnL in time. <br>
-![bbo_test.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo_test.png) <br>
+![bbo_test.csv]
+(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo_test.png) <br>
 <br>
 Another example based on real data, but with optimistic parameters in simulation: <br>
-![bbo.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo.png) <br>
+![bbo.csv]
+(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo.png) <br>
 
 <h2 align="left">Contacts</h2>
 Feel free to contact me: antonlyulin93@gmail.com
