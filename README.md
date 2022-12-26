@@ -1,1 +1,1 @@
-"# CPP_Simulator_HFT" 
+<h1 align="center">HFT Simulator</a>
