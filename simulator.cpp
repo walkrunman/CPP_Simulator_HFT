@@ -1,8 +1,9 @@
 // Simulator provides actual data with functions get_snapshot and get_trade
 // Information about snapshots and trades refreshed by function tick()
 // The function tick also executes orders and do all rest job
-// In order to place order use the function place_order
-// In order to cancel order use the function cancel_order
+// In order to place order use the function place_order()
+// In order to cancel order use the function cancel_order()
+// place_market_order() is used for placing market orders which are executed "immediately"
 // You can receive information about asset position with function get_pos()
 
 #ifndef SIMULATOR
@@ -13,7 +14,7 @@ public:
               int64_t md_latency_           = 10000,
               int64_t execution_latency_    = 10000,
               bool    limit_switch_market_  = true){
-        loader = new DataLoader(lobs, trades);
+        loader = new Loader(lobs, trades);
         md_latency = md_latency_;
         execution_latency = execution_latency_;
         limit_switch_market = limit_switch_market_;
@@ -29,8 +30,8 @@ public:
 
     void place_order(int id, bool aggro_side,
                      double price, double vol, int64_t ts){
-        shared_ptr<Order> order_bid = make_shared<Order>(id, aggro_side, price, vol, ts);
-        preplaced_orders.push_back(order_bid);
+        shared_ptr<Order> order = make_shared<Order>(id, aggro_side, price, vol, ts);
+        preplaced_orders.push_back(order);
     }
 
     void place_order(std::shared_ptr<Order> order){
@@ -46,9 +47,16 @@ public:
         precanceled_orders.push_back(cancel);
     }
 
+    void place_market_order(bool aggro_side, double vol, int64_t ts){
+        shared_ptr<Order> market_order = make_shared<Order>(-1, aggro_side, -1, vol, ts);
+        market_orders.push_back(market_order);
+    }
+
     std::shared_ptr<Trade> get_trade() {return trade_strategy;}
     std::shared_ptr<Snapshot> get_snapshot() {return snapshot_strategy;}
     list<std::shared_ptr<OwnTrade>> get_own_trades() {return own_trades;}
+
+    int64_t get_strategy_time() {return str_time;}
     double get_pos() {return pos;}
     double get_money() {return money;}
 
@@ -57,15 +65,19 @@ private:
     int64_t execution_latency;              // latency in sending information from the strategy to the simulator
                                             // in fact it is latency in execution orders and so on
     int64_t sim_time            = 0;        // actual time for simulator
-    double  money               = 0;        // how much money do we have
-    double  pos                 = 0;        // how much asset do we have
+    int64_t str_time            = 0;
+
+    double  pos                 = 0;        // assets position; how much asset do we have
+    double  money               = 0;        // money position
+
+    double mid_price;
     int8_t  flag_update;                    // flag_update = 0 if both "snapshot" and "trade" were received from
                                             // the function update_md(), 1 if only "trade", 2 if only "snapshot
     bool limit_switch_market;               // If true, orders which intersect current snapshot in opposite side
                                             // will be executed as market orders. I.e. for example if price of a bid order > best
                                             // ask price of the snapshot, it will be executed as market order with commission
 
-    DataLoader *loader;
+    Loader *loader;
 
     std::shared_ptr<Trade>             trade_strategy;    // "trade" which available and actual for strategy
     std::shared_ptr<Snapshot>          snapshot_strategy; // "snapshot" which available and actual for strategy
@@ -80,8 +92,10 @@ private:
     list<std::shared_ptr<CancelOrder>> precanceled_orders; // 2 queues with cancelation requests
     list<std::shared_ptr<CancelOrder>> canceled_orders;    // similarly with preplaced_orders and placed_orders
 
-    list<std::shared_ptr<OwnTrade>> preplaced_own_trades;  // similarly with 2 pairs above but own trades creates in simulator
-    list<std::shared_ptr<OwnTrade>> own_trades;
+    list<std::shared_ptr<OwnTrade>>    preplaced_own_trades;  // similarly with 2 pairs above but own trades creates in simulator
+    list<std::shared_ptr<OwnTrade>>    own_trades;
+
+    list<std::shared_ptr<Order>>       market_orders;
 
     void prepare_orders(){
         move_placed_orders();
@@ -92,7 +106,7 @@ private:
 
     void execute_orders(){
         execute_limit_orders();
-        // execute_market_orders(); // Not realized yet
+        execute_market_orders(); // Not realized yet
     }
 
     void update_md();
@@ -101,18 +115,21 @@ private:
     void execute_order_cancelation();
     void move_own_trades();
 
-    void execute_one_market_order(Order order);
+    void execute_limit_order_as_market(Order order);
     void execute_limit_orders();
+    void execute_market_orders();
 };
 
 void Simulator::update_md(){
-    flag_update = loader->tick();
-    trade_strategy = loader->get_trade();
-    snapshot_strategy = loader->get_snapshot();
-    sim_time = max(trade_strategy->get_exchange_ts(), snapshot_strategy->get_exchange_ts());
+    flag_update         = loader->tick();
+    trade_strategy      = loader->get_trade();
+    snapshot_strategy   = loader->get_snapshot();
+    sim_time            = loader->get_exchange_time();
+    str_time            = loader->get_receive_time();
 
-    trade_sim = trade_strategy;
-    snapshot_sim = snapshot_strategy;
+    trade_sim       = trade_strategy;
+    snapshot_sim    = snapshot_strategy;
+    mid_price       = (snapshot_sim->get_ask_price()[0] + snapshot_sim->get_bid_price()[0])/2;
 }
 
 void Simulator::move_placed_orders(){
@@ -140,9 +157,9 @@ void Simulator::move_canceled_orders(){
 }
 
 void Simulator::execute_order_cancelation(){
-    for (auto co = canceled_orders.begin(); co != canceled_orders.end();)
+    for(auto co = canceled_orders.begin(); co != canceled_orders.end();)
     {
-        for (auto po = placed_orders.begin(); po != placed_orders.end();){
+        for(auto po = placed_orders.begin(); po != placed_orders.end();){
             if ((*(*co)).get_id()==(*(*po)).get_id())
             {
                 po = placed_orders.erase(po);
@@ -165,14 +182,14 @@ void Simulator::execute_limit_orders(){
             // then we execute the order as market order
             if(limit_switch_market && !(*(*po)).get_side() && snapshot_sim->get_ask_price()[0] <= (*(*po)).get_price())
             {
-                execute_one_market_order((*(*po)));
+                execute_limit_order_as_market((*(*po)));
                 po = placed_orders.erase(po);
                 continue;
             }
             // analogically. limit_switch_market==true, order is an ask order and best bid price more or equal than
             // the ask order price
             if(limit_switch_market && (*(*po)).get_side() && snapshot_sim->get_bid_price()[0] >= (*(*po)).get_price()){
-                execute_one_market_order((*(*po)));
+                execute_limit_order_as_market((*(*po)));
                 po = placed_orders.erase(po);
                 continue;
             }
@@ -191,7 +208,7 @@ void Simulator::execute_limit_orders(){
                     trade_sim->get_vol()   >= (*(*po)).get_vol())
                 {
                         shared_ptr<OwnTrade> own = make_shared<OwnTrade>((*(*po)).get_side(), (*(*po)).get_price(),
-                                                         (*(*po)).get_vol(), sim_time, 0);
+                                                        (*(*po)).get_vol(), mid_price, sim_time, 0);
                         preplaced_own_trades.push_back(own);
                         trade_sim->set_vol( trade_sim->get_vol() - (*(*po)).get_vol() );
                         po = placed_orders.erase(po);
@@ -204,16 +221,15 @@ void Simulator::execute_limit_orders(){
                 if( trade_sim->get_price() <= (*(*po)).get_price() &&
                     trade_sim->get_vol()   >= (*(*po)).get_vol())
                 {
-                        cout << "2 time: " << sim_time << endl;
                         shared_ptr<OwnTrade> own = make_shared<OwnTrade>((*(*po)).get_side(), (*(*po)).get_price(),
-                                                         (*(*po)).get_vol(), sim_time, 0);
+                                                         (*(*po)).get_vol(), mid_price, sim_time, 0);
                         preplaced_own_trades.push_back(own);
                         trade_sim->set_vol( trade_sim->get_vol() - (*(*po)).get_vol() );
                         po = placed_orders.erase(po);
                         continue;
                 }
             }
-            if(trade_sim->get_vol() < 0.00001){
+            if(trade_sim->get_vol() <= 0){
                 po = placed_orders.erase(po);
                 break;
             }
@@ -222,10 +238,8 @@ void Simulator::execute_limit_orders(){
     }
 }
 
-void Simulator::execute_one_market_order(Order order){
-    // This function calculates how much money we earn or lose in case of execution a market order
+void Simulator::execute_limit_order_as_market(Order order){
     // The expediency of calling a function must be decided outside of this function.
-    // This function will generate OwnTrade in any case
     double saved_vol = order.get_vol();
 
     if(!order.get_side()) //if we have bid order
@@ -241,6 +255,7 @@ void Simulator::execute_one_market_order(Order order){
                     shared_ptr<OwnTrade> own = make_shared<OwnTrade>(order.get_side(),
                                                                      snapshot_sim->get_ask_price()[level],
                                                                      snapshot_sim->get_ask_vol()[level],
+                                                                     mid_price,
                                                                      sim_time, 1);
                     preplaced_own_trades.push_back(own);
                     saved_vol -= snapshot_sim->get_ask_vol()[level];
@@ -250,7 +265,7 @@ void Simulator::execute_one_market_order(Order order){
                 {
                     shared_ptr<OwnTrade> own = make_shared<OwnTrade>(order.get_side(),
                                                                      snapshot_sim->get_ask_price()[level],
-                                                                     saved_vol, sim_time, 1);
+                                                                     saved_vol, mid_price, sim_time, 1);
                     preplaced_own_trades.push_back(own);
                     saved_vol = 0;
                 }
@@ -274,7 +289,7 @@ void Simulator::execute_one_market_order(Order order){
                     shared_ptr<OwnTrade> own = make_shared<OwnTrade>(order.get_side(),
                                                                      snapshot_sim->get_bid_price()[level],
                                                                      snapshot_sim->get_bid_vol()[level],
-                                                                     sim_time, 1);
+                                                                     mid_price, sim_time, 1);
                     preplaced_own_trades.push_back(own);
                     saved_vol -= snapshot_sim->get_bid_vol()[level];
                     continue;
@@ -283,7 +298,7 @@ void Simulator::execute_one_market_order(Order order){
                 {
                     shared_ptr<OwnTrade> own = make_shared<OwnTrade>(order.get_side(),
                                                                      snapshot_sim->get_bid_price()[level],
-                                                                     saved_vol, sim_time, 1);
+                                                                     saved_vol, mid_price, sim_time, 1);
                     preplaced_own_trades.push_back(own);
                     saved_vol = 0;
                 }
@@ -295,18 +310,82 @@ void Simulator::execute_one_market_order(Order order){
     }
 }
 
+void Simulator::execute_market_orders(){
+    for(auto mo = market_orders.begin(); mo != market_orders.end();)
+    {
+        double saved_vol = (*(*mo)).get_vol();
+        if(!(*(*mo)).get_side()) //if we have bid order
+        {
+            for(int level=0; level<10; level++){
+                if(saved_vol <= 0){
+                    break;
+                }
+                if(saved_vol >= snapshot_sim->get_ask_vol()[level])
+                {
+                    shared_ptr<OwnTrade> own = make_shared<OwnTrade>((*(*mo)).get_side(),
+                                                                     snapshot_sim->get_ask_price()[level],
+                                                                     snapshot_sim->get_ask_vol()[level],
+                                                                     mid_price,
+                                                                     sim_time, 1);
+                    preplaced_own_trades.push_back(own);
+                    saved_vol -= snapshot_sim->get_ask_vol()[level];
+                    continue;
+                }
+                if(saved_vol < snapshot_sim->get_ask_vol()[level])
+                {
+                    shared_ptr<OwnTrade> own = make_shared<OwnTrade>((*(*mo)).get_side(),
+                                                                     snapshot_sim->get_ask_price()[level],
+                                                                     saved_vol, mid_price, sim_time, 1);
+                    preplaced_own_trades.push_back(own);
+                    saved_vol = 0;
+                }
+            }
+        }
+
+        if((*(*mo)).get_side()) //if we have ask order
+        {
+            for(int level=0; level<10; level++){
+                if(saved_vol <= 0){
+                    break;
+                }
+                if(saved_vol >= snapshot_sim->get_bid_vol()[level])
+                {
+                    shared_ptr<OwnTrade> own = make_shared<OwnTrade>((*(*mo)).get_side(),
+                                                                     snapshot_sim->get_bid_price()[level],
+                                                                     snapshot_sim->get_bid_vol()[level],
+                                                                     mid_price, sim_time, 1);
+                    preplaced_own_trades.push_back(own);
+                    saved_vol -= snapshot_sim->get_bid_vol()[level];
+                    continue;
+                }
+                if(saved_vol < snapshot_sim->get_bid_vol()[level])
+                {
+                    shared_ptr<OwnTrade> own = make_shared<OwnTrade>((*(*mo)).get_side(),
+                                                                     snapshot_sim->get_bid_price()[level],
+                                                                     saved_vol, mid_price, sim_time, 1);
+                    preplaced_own_trades.push_back(own);
+                    saved_vol = 0;
+                }
+            }
+        }
+        mo = market_orders.erase(mo);
+    }
+}
+
 void Simulator::move_own_trades(){
     for(int i = 0; i<preplaced_own_trades.size(); ++i){
         if( preplaced_own_trades.front()->get_time()+md_latency <= sim_time ){
+            if(!preplaced_own_trades.front()->get_side()) //if bid own trade
+            {
+                pos += preplaced_own_trades.front()->get_vol();
+                money -= preplaced_own_trades.front()->get_vol() * preplaced_own_trades.front()->get_price();
+            }
+            else
+            {
+                pos -= preplaced_own_trades.front()->get_vol();
+                money += preplaced_own_trades.front()->get_vol() * preplaced_own_trades.front()->get_price();
+            }
             own_trades.push_back(preplaced_own_trades.front());
-            if(preplaced_own_trades.front()->get_side() == false){
-                pos = pos + preplaced_own_trades.front()->get_vol();
-                money = money - preplaced_own_trades.front()->get_vol() * preplaced_own_trades.front()->get_price();
-            }
-            else{
-                pos = pos - preplaced_own_trades.front()->get_vol();
-                money = money + preplaced_own_trades.front()->get_vol() * preplaced_own_trades.front()->get_price();
-            }
             preplaced_own_trades.pop_front();
         }
         else{
@@ -315,6 +394,16 @@ void Simulator::move_own_trades(){
     }
     if(flag_update<0){
         for(int i = 0; i<preplaced_own_trades.size(); ++i){
+            if(!preplaced_own_trades.front()->get_side()) //if bid own trade
+            {
+                pos += preplaced_own_trades.front()->get_vol();
+                money -= preplaced_own_trades.front()->get_vol() * preplaced_own_trades.front()->get_price();
+            }
+            else
+            {
+                pos -= preplaced_own_trades.front()->get_vol();
+                money += preplaced_own_trades.front()->get_vol() * preplaced_own_trades.front()->get_price();
+            }
             own_trades.push_back(preplaced_own_trades.front());
             preplaced_own_trades.pop_front();
         }

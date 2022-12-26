@@ -2,12 +2,15 @@
 #define STRATEGY
 class BaseStrategy{
 public:
-    BaseStrategy(string lobs, string trades,
-                 int64_t md_latency,
-                 int64_t execution_latency,
-                 int64_t delay_,
-                 int64_t hold_time_,
-                 bool limit_switch_market){
+    BaseStrategy(string lobs, string trades,   // paths to files with order books and anonymous trades
+                 int64_t md_latency,           // latency with which market data are updated (simulator send
+                                               // data to strategy after this latency)
+                 int64_t execution_latency,    // orders are executed after this latency
+                 int64_t delay_,               // delay between placing orders
+                 int64_t hold_time_,           // we will cancel orders older than this time
+                 bool limit_switch_market      // if true than orders which cross opposite side of the order book
+                                               // will be executed as market orders
+                ){
         sim = new Simulator(lobs,
                             trades,
                             md_latency,
@@ -20,32 +23,29 @@ public:
         int cnt = 0;  // counter of iterations (optional)
 
         while(data_type>=0){
-            data_type = sim->tick();                                         // update_data, executing previous orders and so on
-            auto trade     = sim->get_trade();                               // get trade data
-            auto snapshot  = sim->get_snapshot();                            // get snapshot data
-            time = max(trade->get_receive_ts(), snapshot->get_receive_ts()); // define strategy time
+            data_type           = sim->tick();                // update_data, executing previous orders and so on
+            auto trade          = sim->get_trade();           // get current anonymous trade data (current for strategy)
+            auto snapshot       = sim->get_snapshot();        // get current snapshot data
+            time                = sim->get_strategy_time();   // current strategy time
+            pos   = sim->get_pos();                           // receive current assets position
+            money = sim->get_money();                         // receive current money position
 
-            // A condition below(data_type==2 || data_type==0) is optional.
-            // If we decide place orders if and only if snapshot was changed
-            // then we should skip trade changes. But if we decide to place orders
-            // depends on other changes, we should comment out this condition
-            if((data_type==2 || data_type==0) && time >= prev_time+delay){
-                call_place_order(1, snapshot->get_ask_price()[0], 0.001);
-                prev_time = time;
+            if(time >= prev_time+delay){
+                call_place_order(1, snapshot->get_ask_price()[0], 0.001); // place ask order
+                call_place_order(0, snapshot->get_bid_price()[0], 0.001); // place bid order
+
+                // sim->place_market_order(0, 50, time); // palce market order if you want
+                prev_time = time;                        // update previous time
             }
-            cancel_old_orders();
 
-            /*if(cnt>1e4){
-                break;
-            }*/
+            cancel_old_orders(); // cancel orders older than hold_time
+
             ++cnt;
         }
         cout << "Count of iterations: " << cnt << endl;
         cout << "Count of placed orders: " << order_counter << endl;
-        cout << "Count of assets: " << sim->get_pos() << endl;
-        cout << "How much money do we have: " << sim->get_money() << endl;
 
-        print_results(sim->get_own_trades());
+        print_results(sim->get_own_trades()); // print results into a file
     }
 
 private:
@@ -54,14 +54,17 @@ private:
                                                    // 0 when we get both "snapshot" and "trade", 1 if when we get only trade
                                                    // 2 - snapshot, -1 if we get an empty line from files (i.e. data was ended)
     unsigned int order_counter    = 0;             // count orders which were tried to place
+    double pos                    = 0;
+    double money                  = 0;
     int64_t time                  = 0;             // time actual for strategy
     int64_t prev_time             = 0;             // the time we last requested to place an order
 
-    int64_t delay                 = 1e4;           // Delay between placing orders (we don't place orders frequently than
+    int64_t delay;                                 // Delay between placing orders (we don't place orders frequently than
                                                    // 1 time per "delay" nanoseconds)
-    int64_t hold_time             = 1e4;           // Orders older than "hold_time" are removed
+    int64_t hold_time;                             // Orders older than "hold_time" are removed
 
     list<shared_ptr<Order>> placed_orders;         // A container for memorization orders we placed
+    list<std::shared_ptr<OwnTrade>> own_trades;    // Container with executed trades
 
     void cancel_old_orders();
     void call_place_order(bool side, double price, double vol);
@@ -91,6 +94,5 @@ void BaseStrategy::cancel_old_orders(){
         }
     }
 }
-
 #endif //STRATEGY
 

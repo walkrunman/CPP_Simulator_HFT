@@ -4,13 +4,14 @@ void print_results(list<std::shared_ptr<OwnTrade>> own_trade,
                    string path_results = "trades.csv"){
     ofstream trades;
     trades.open(path_results);
-    trades << "time;side;price;vol;trading_way"<< endl;
+    trades << "time;side;price;vol;mid_price;trading_way"<< endl;
     for(auto it=own_trade.begin(); it!=own_trade.end(); ++it){
         trades <<
         (*(*it)).get_time()         << ";" <<
         (*(*it)).get_side()         << ";" <<
         (*(*it)).get_price()        << ";" <<
         (*(*it)).get_vol()          << ";" <<
+        (*(*it)).get_mid_price()    << ";" <<
         (*(*it)).get_trading_way()  << endl;
     }
     trades.close();
