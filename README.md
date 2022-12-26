@@ -34,3 +34,17 @@ Simulator methods:
 - cancel_order(id, timw) cancels orders. Parameters: id of an order, time when we decide to cancel an order (Not time of an order, it's current time for strategy) <br>
 <br>
 In the file utils a function print_results was released. It print results into file with name results.csv <br>
+
+<h2 align="left">Tests</h2>
+I've generated 2 files for test strategy: lobs.csv and trades.csv: <br>
+![test_lobs.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_lobs.png?raw=true) <br>
+![test_trades.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_trades.png?raw=true) <br>
+It means mid_price grow up linearly. <br>
+And here's how best-bid-best-ask strategy works with these data. Here's graphic of PnL in time. <br>
+![bbo_test.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo_test.png?raw=true) <br>
+<br>
+Another example based on real data, but with optimistic parameters in simulation: <br>
+![bbo.csv](https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo.png?raw=true) <br>
+
+<h2 align="left">Contacts</h2>
+Feel free to contact me: antonlyulin93@gmail.com
