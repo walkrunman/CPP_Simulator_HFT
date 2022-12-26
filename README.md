@@ -4,7 +4,7 @@ In order to use this simulator you have to have 2 files: lobs.csv and trades.csv
 lobs.csv should consist data about order books changes. <br>
 <br>
 Example: <br>
-![lobs.csv](/CPP_Simulator_HFT/images/order_book_example.png) 
+![lobs.csv](/images/order_book_example.png) 
 <br>
 <br>
 10 prices and 10 volumes for ask and 10 prices and 10 volumes for bid <br>
