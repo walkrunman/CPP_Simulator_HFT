@@ -4,8 +4,7 @@ In order to use this simulator you have to have 2 files: lobs.csv and trades.csv
 lobs.csv should consist data about order books changes. <br>
 <br>
 Example: <br>
-![lobs.csv]
-(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/order_book_example.png) 
+![lobs.csv] (https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/order_book_example.png) 
 <br>
 <br>
 10 prices and 10 volumes for ask and 10 prices and 10 volumes for bid <br>
@@ -13,7 +12,7 @@ Example: <br>
 trades.csv should consist data about anonymous trades 
 <br>
 ![trades.csv]
-(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/trades_example.png) 
+(https://github.com/walkrunman/CPP_Simulator_HFT/raw/main/images/trades_example.png) 
 <br>
 <h2 align="left">Usage</h2>
 Simulator parameters: <br>
