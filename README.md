@@ -11,8 +11,7 @@ Example: <br>
 <br>
 trades.csv should consist data about anonymous trades 
 <br>
-![trades.csv]
-(https://github.com/walkrunman/CPP_Simulator_HFT/raw/main/images/trades_example.png) 
+<img src="https://github.com/walkrunman/CPP_Simulator_HFT/raw/main/images/trades_example.png?raw=true" alt="trades.csv">
 <br>
 <h2 align="left">Usage</h2>
 Simulator parameters: <br>
@@ -38,20 +37,16 @@ In the file utils a function print_results was released. It print results into f
 
 <h2 align="left">Tests</h2>
 I've generated 2 files for test strategy: lobs.csv and trades.csv: <br>
-![test_lobs.csv]
-(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_lobs.png)
+<img src="https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_lobs.png?raw=true" alt="test_lobs.csv">
 <br>
-![test_trades.csv]
-(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_trades.png)
+<img src="https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/test_trades.png?raw=true" alt="test_trades.csv">
 <br>
 It means mid_price grow up linearly. <br>
 And here's how best-bid-best-ask strategy works with these data. Here's graphic of PnL in time. <br>
-![bbo_test.csv]
-(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo_test.png) <br>
+<img src="https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo_test.png" alt="bbo_test.csv">
 <br>
 Another example based on real data, but with optimistic parameters in simulation: <br>
-![bbo.csv]
-(https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo.png) <br>
+<img src="https://github.com/walkrunman/CPP_Simulator_HFT/blob/main/images/bbo.png" alt="bbo.csv">
 
 <h2 align="left">Contacts</h2>
 Feel free to contact me: antonlyulin93@gmail.com
